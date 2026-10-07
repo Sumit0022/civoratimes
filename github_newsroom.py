@@ -16,7 +16,7 @@ FEEDS = [
     'https://news.google.com/rss/search?q=site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:1h&hl=en-IN&gl=IN&ceid=IN:en'
 ]
 
-API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBRhLie01nIf58UctegmVYwY28zGelg1Y4")
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
 def load_history():
     if not os.path.exists(HISTORY_FILE):
