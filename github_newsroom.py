@@ -6,7 +6,6 @@ from datetime import datetime
 import json
 from PIL import Image, ImageDraw
 import tweepy
-from instagrapi import Client
 
 # Import the drawing logic
 from generate_news_poster import draw_adaptive_multicolor_text, padded_box, FONT_PATH, TEMPLATE_PATH
@@ -151,32 +150,6 @@ def create_poster(news):
     
     return out_filename, caption_text
 
-def post_to_instagram(image_path, caption):
-    ig_user = os.environ.get("IG_USERNAME")
-    ig_pass = os.environ.get("IG_PASSWORD")
-    
-    if not ig_user or not ig_pass:
-        print("Instagram credentials not found. Skipping IG post.")
-        return False
-        
-    try:
-        print("Logging into Instagram...")
-        cl = Client()
-        cl.login(ig_user, ig_pass)
-        
-        print("Converting image to JPG for Instagram...")
-        jpg_path = image_path.replace('.png', '.jpg')
-        img = Image.open(image_path)
-        img.convert('RGB').save(jpg_path, 'JPEG', quality=95)
-        
-        print("Uploading photo to Instagram...")
-        cl.photo_upload(jpg_path, caption)
-        print("Successfully posted to Instagram!")
-        return True
-    except Exception as e:
-        print(f"Error posting to Instagram: {e}")
-        return False
-
 def post_to_twitter(image_path, caption):
     try:
         auth = tweepy.OAuth1UserHandler(
@@ -228,9 +201,8 @@ def main():
         img_path, caption = create_poster(news)
         if img_path:
             success_tw = post_to_twitter(img_path, caption)
-            success_ig = post_to_instagram(img_path, caption)
             
-            if success_tw or success_ig:
+            if success_tw:
                 save_to_history(news['link'])
                 print("Posted one news item. Exiting to wait for next cron run.")
                 break
