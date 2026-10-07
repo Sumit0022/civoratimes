@@ -105,13 +105,8 @@ def fetch_fresh_news(history):
                     news_id = entry.link
                     if news_id not in history:
                         raw_title = entry.title.split(" - ")[0]
-                        print(f"Found new news: {raw_title}")
-                        tagline, summary, is_breaking, hashtags = generate_ai_content(raw_title)
+                        print(f"Found new news candidate: {raw_title}")
                         fresh_items.append({
-                            'tagline': tagline,
-                            'summary': summary,
-                            'is_breaking': is_breaking,
-                            'hashtags': hashtags,
                             'original_title': raw_title,
                             'link': entry.link,
                             'source': url.split('.')[1].upper()
@@ -223,6 +218,13 @@ def main():
         return
         
     for news in fresh_news:
+        print(f"Processing AI for: {news['original_title']}")
+        tagline, summary, is_breaking, hashtags = generate_ai_content(news['original_title'])
+        news['tagline'] = tagline
+        news['summary'] = summary
+        news['is_breaking'] = is_breaking
+        news['hashtags'] = hashtags
+        
         img_path, caption = create_poster(news)
         if img_path:
             success_tw = post_to_twitter(img_path, caption)
