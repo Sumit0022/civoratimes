@@ -37,7 +37,7 @@ def save_to_history(news_id):
 def generate_ai_content(raw_headline):
     prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics. I will give you a news headline. 
 You must generate THREE things:
-1. "tagline": A short, punchy, bold tagline for the poster (strictly MAXIMUM 8 words). Do not use quotes or emojis.
+1. "tagline": A catchy, punchy, and extremely bold tagline for the poster (MAXIMUM 15 words). Do not use quotes or emojis.
 2. "summary": A detailed summary of the news story (around 100-250 words). IMPORTANT: Write this in very simple, basic English so a normal person can easily understand it without complex vocabulary. Use relevant emojis.
 3. "is_breaking": A boolean (true or false). Set to true ONLY if the news is a massive national event, huge emergency, or extremely critical political shift. Otherwise, set to false.
 
@@ -144,7 +144,7 @@ def create_poster(news):
     img_copy.save(out_filename)
     
     breaking_prefix = "🚨 BREAKING NEWS 🚨\n\n" if news.get('is_breaking') else ""
-    caption_text = f"{breaking_prefix}{news['summary']}\n\nRead more at: {news['link']}\n\n#CivoraTimes #News #India"
+    caption_text = f"{breaking_prefix}{news['summary']}\n\n#CivoraTimes #News #India"
     
     return out_filename, caption_text
 
