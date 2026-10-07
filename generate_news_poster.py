@@ -90,8 +90,17 @@ def draw_adaptive_multicolor_text(draw, text, bounding_box, font_path, max_font_
     if not best_wrapped_lines:
         return
 
-    line_spacing = int(font_size * 0.3)
-    total_height = (len(best_wrapped_lines) * best_line_height) + ((len(best_wrapped_lines) - 1) * line_spacing)
+    num_lines = len(best_wrapped_lines)
+    if num_lines > 1:
+        remaining_height = max_height - (num_lines * best_line_height)
+        dynamic_spacing = remaining_height // (num_lines - 1)
+        # Cap the maximum spacing to avoid ridiculous gaps, but allow up to 1.5x font size
+        max_allowed_spacing = int(font_size * 1.5)
+        line_spacing = min(dynamic_spacing, max_allowed_spacing)
+    else:
+        line_spacing = 0
+        
+    total_height = (num_lines * best_line_height) + ((num_lines - 1) * line_spacing)
     
     # Calculate starting Y to center vertically
     current_y = center_y - (total_height // 2)
