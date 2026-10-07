@@ -47,7 +47,7 @@ Headline: {raw_headline}"""
         headers = {'Content-Type': 'application/json'}
         data = {"contents": [{"parts": [{"text": prompt}]}]}
         
-        response = requests.post(url, headers=headers, json=data, timeout=15)
+        response = requests.post(url, headers=headers, json=data, timeout=120)
         response.raise_for_status()
         
         result = response.json()
