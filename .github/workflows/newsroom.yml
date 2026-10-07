@@ -1,0 +1,45 @@
+name: 24x7 AI News Room
+
+on:
+  schedule:
+    # Runs every 15 minutes (note: GitHub Actions may delay this slightly)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+  repository_dispatch:
+    types: [news_trigger] # Allows triggering from cron-job.org
+
+jobs:
+  post-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow requests feedparser tweepy google-generativeai
+
+      - name: Run AI News Script
+        env:
+          TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+          TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python github_newsroom.py
+
+      - name: Commit posted_news.txt back to repo
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add posted_news.txt
+          # Only commit and push if there are changes (i.e. new news was posted)
+          git diff --staged --quiet || (git commit -m "Updated posted_news.txt" && git push)
