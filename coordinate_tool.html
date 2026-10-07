@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Find Coordinates</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; background: #f0f0f0; }
+        .container { position: relative; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #target-image { display: block; max-height: 90vh; width: auto; cursor: crosshair; }
+        #selection-box {
+            position: absolute; border: 3px solid red; background-color: rgba(255, 0, 0, 0.2);
+            pointer-events: none; display: none;
+        }
+        #instructions { margin-bottom: 15px; font-size: 18px; font-weight: bold; }
+        .btn { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-right: 10px; background: #007bff; color: white; border: none; border-radius: 5px; }
+        #coords-display { margin-top: 15px; font-size: 20px; font-weight: bold; color: green; }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        Select format: 
+        <button class="btn" onclick="loadImage('C:/Users/DELL/Desktop/format/BJP.png')">Load BJP (NDA)</button>
+        <button class="btn" onclick="loadImage('C:/Users/DELL/Desktop/format/SP.png')">Load SP (INDIA)</button>
+        <button class="btn" onclick="loadImage('C:/Users/DELL/Desktop/format/Others.png')">Load Others</button>
+        <br><br>
+        1. Click a button above to load image.<br>
+        2. Click and drag on the image to draw a box where text should go.<br>
+        3. The coordinates will appear below. Copy them!
+    </div>
+    
+    <div class="container" id="container">
+        <img id="target-image" src="" alt="Click a button above to load image">
+        <div id="selection-box"></div>
+    </div>
+    
+    <div id="coords-display"></div>
+
+    <script>
+        const container = document.getElementById('container');
+        const img = document.getElementById('target-image');
+        const box = document.getElementById('selection-box');
+        const coordsDisplay = document.getElementById('coords-display');
+        
+        let startX, startY, isDrawing = false;
+        
+        function loadImage(src) {
+            img.src = "file:///" + src;
+            box.style.display = 'none';
+            coordsDisplay.innerHTML = '';
+        }
+
+        img.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = img.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            
+            box.style.left = startX + 'px';
+            box.style.top = startY + 'px';
+            box.style.width = '0px';
+            box.style.height = '0px';
+            box.style.display = 'block';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = img.getBoundingClientRect();
+            const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+            
+            const left = Math.min(startX, currentX);
+            const top = Math.min(startY, currentY);
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            
+            box.style.left = left + 'px';
+            box.style.top = top + 'px';
+            box.style.width = width + 'px';
+            box.style.height = height + 'px';
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const rect = img.getBoundingClientRect();
+            const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+            
+            const left = Math.min(startX, currentX);
+            const top = Math.min(startY, currentY);
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            
+            // Calculate scale ratio (natural size vs displayed size)
+            const scaleX = img.naturalWidth / rect.width;
+            const scaleY = img.naturalHeight / rect.height;
+            
+            const originalX1 = Math.round(left * scaleX);
+            const originalY1 = Math.round(top * scaleY);
+            const originalX2 = Math.round((left + width) * scaleX);
+            const originalY2 = Math.round((top + height) * scaleY);
+            
+            const coords = `[${originalX1}, ${originalY1}, ${originalX2}, ${originalY2}]`;
+            coordsDisplay.innerHTML = `Coordinates: <strong>${coords}</strong> <br> (Please copy this to chat!)`;
+            
+            // Try to copy to clipboard
+            navigator.clipboard.writeText(coords).catch(err => console.log('Failed to copy', err));
+        });
+        
+        // Prevent default drag behavior on image
+        img.addEventListener('dragstart', (e) => e.preventDefault());
+    </script>
+</body>
+</html>

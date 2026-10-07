@@ -1,0 +1,11 @@
+# Environments
+.env
+__pycache__/
+*.pyc
+
+# Local Data and Outputs
+posters/
+*.xlsx
+*.csv
+*.png
+*.pkl
