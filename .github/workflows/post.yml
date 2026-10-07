@@ -25,6 +25,8 @@ on:
     # 11:00 PM IST
     - cron: '30 17 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  repository_dispatch:
+    types: [trigger-post]
 
 jobs:
   post_tweet:
