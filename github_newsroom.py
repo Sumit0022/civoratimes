@@ -36,16 +36,18 @@ def save_to_history(news_id):
 
 def generate_ai_content(raw_headline):
     prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics. I will give you a news headline. 
-You must generate THREE things:
+You must generate FOUR things:
 1. "tagline": A catchy, punchy, and extremely bold tagline for the poster (MAXIMUM 15 words). Do not use quotes or emojis.
 2. "summary": A detailed summary of the news story (around 100-250 words). IMPORTANT: Write this in very simple, basic English so a normal person can easily understand it without complex vocabulary. Use relevant emojis.
 3. "is_breaking": A boolean (true or false). Set to true ONLY if the news is a massive national event, huge emergency, or extremely critical political shift. Otherwise, set to false.
+4. "hashtags": Generate 5-7 highly relevant and currently trending Twitter hashtags based on the specific news topic. Always include #CivoraTimes. Format them as a single string (e.g., "#CivoraTimes #News #Topic").
 
 Respond ONLY with a valid JSON object in this format:
 {{
     "tagline": "SHORT HEADLINE HERE",
     "summary": "Simple English summary goes here...",
-    "is_breaking": false
+    "is_breaking": false,
+    "hashtags": "#CivoraTimes #Trending #Politics"
 }}
 
 Headline: {raw_headline}"""
@@ -74,7 +76,12 @@ Headline: {raw_headline}"""
                 text = json_match.group(0)
                 
             content = json.loads(text)
-            return content.get("tagline", raw_headline).replace('"', '').replace("'", ""), content.get("summary", raw_headline), content.get("is_breaking", False)
+            return (
+                content.get("tagline", raw_headline).replace('"', '').replace("'", ""), 
+                content.get("summary", raw_headline), 
+                content.get("is_breaking", False),
+                content.get("hashtags", "#CivoraTimes #News #India")
+            )
             
         except Exception as e:
             print(f"AI Error on attempt {attempt+1}: {e}")
@@ -82,7 +89,7 @@ Headline: {raw_headline}"""
             
     # Fallback to original headline if AI completely fails
     print("AI failed after 3 attempts. Using fallback.")
-    return raw_headline, raw_headline, False
+    return raw_headline, raw_headline, False, "#CivoraTimes #News #India"
 
 def fetch_fresh_news(history):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking RSS feeds...")
@@ -99,11 +106,12 @@ def fetch_fresh_news(history):
                     if news_id not in history:
                         raw_title = entry.title.split(" - ")[0]
                         print(f"Found new news: {raw_title}")
-                        tagline, summary, is_breaking = generate_ai_content(raw_title)
+                        tagline, summary, is_breaking, hashtags = generate_ai_content(raw_title)
                         fresh_items.append({
                             'tagline': tagline,
                             'summary': summary,
                             'is_breaking': is_breaking,
+                            'hashtags': hashtags,
                             'original_title': raw_title,
                             'link': entry.link,
                             'source': url.split('.')[1].upper()
@@ -144,7 +152,7 @@ def create_poster(news):
     img_copy.save(out_filename)
     
     breaking_prefix = "🚨 BREAKING NEWS 🚨\n\n" if news.get('is_breaking') else ""
-    caption_text = f"{breaking_prefix}{news['summary']}\n\n#CivoraTimes #News #India"
+    caption_text = f"{breaking_prefix}{news['summary']}\n\n{news['hashtags']}"
     
     return out_filename, caption_text
 
