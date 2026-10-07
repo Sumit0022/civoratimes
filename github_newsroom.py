@@ -150,6 +150,29 @@ def create_poster(news):
     
     return out_filename, caption_text
 
+def send_to_telegram(image_path, caption):
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    
+    if not bot_token or not chat_id:
+        print("Telegram credentials not found. Skipping Telegram message.")
+        return False
+        
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+        with open(image_path, 'rb') as photo:
+            payload = {'chat_id': chat_id, 'caption': caption}
+            response = requests.post(url, data=payload, files={'photo': photo})
+            if response.status_code == 200:
+                print("Successfully sent poster to Telegram!")
+                return True
+            else:
+                print(f"Telegram API Error: {response.text}")
+                return False
+    except Exception as e:
+        print(f"Error sending to Telegram: {e}")
+        return False
+
 def post_to_twitter(image_path, caption):
     try:
         auth = tweepy.OAuth1UserHandler(
@@ -201,6 +224,7 @@ def main():
         img_path, caption = create_poster(news)
         if img_path:
             success_tw = post_to_twitter(img_path, caption)
+            send_to_telegram(img_path, caption)
             
             if success_tw:
                 save_to_history(news['link'])
