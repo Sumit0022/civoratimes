@@ -13,7 +13,12 @@ from generate_news_poster import draw_adaptive_multicolor_text, padded_box, FONT
 HISTORY_FILE = "posted_news.txt"
 
 FEEDS = [
-    'https://news.google.com/rss/search?q=site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:1h&hl=en-IN&gl=IN&ceid=IN:en'
+    # 70% Priority: Focused on Congress, SP, Rahul Gandhi, Akhilesh Yadav
+    'https://news.google.com/rss/search?q=(Rahul+Gandhi+OR+Akhilesh+Yadav+OR+Congress+OR+Samajwadi+Party)+site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:2h&hl=en-IN&gl=IN&ceid=IN:en',
+    # 15% Priority: Local/Normal News
+    'https://news.google.com/rss/search?q=(local+OR+state+OR+public+OR+development+OR+issues)+site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:2h&hl=en-IN&gl=IN&ceid=IN:en',
+    # 15% Priority: General/Others
+    'https://news.google.com/rss/search?q=site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:2h&hl=en-IN&gl=IN&ceid=IN:en'
 ]
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -29,15 +34,17 @@ def save_to_history(news_id):
         f.write(news_id + "\n")
 
 def generate_ai_content(raw_headline):
-    prompt = f"""You are a senior news editor. I will give you a news headline. 
-You must generate TWO things:
-1. "tagline": A short, punchy, aggressive 'Breaking News' style tagline (strictly MAXIMUM 8 words). Keep it extremely bold. Do not use quotes or emojis.
-2. "summary": A detailed summary of the news story (around 100-300 words, max 500 words). Make it engaging for Twitter readers. You can use relevant emojis here.
+    prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics. I will give you a news headline. 
+You must generate THREE things:
+1. "tagline": A short, punchy, bold tagline for the poster (strictly MAXIMUM 8 words). Do not use quotes or emojis.
+2. "summary": A detailed summary of the news story (around 100-250 words). IMPORTANT: Write this in very simple, basic English so a normal person can easily understand it without complex vocabulary. Use relevant emojis.
+3. "is_breaking": A boolean (true or false). Set to true ONLY if the news is a massive national event, huge emergency, or extremely critical political shift. Otherwise, set to false.
 
 Respond ONLY with a valid JSON object in this format:
 {{
     "tagline": "SHORT HEADLINE HERE",
-    "summary": "Detailed summary goes here..."
+    "summary": "Simple English summary goes here...",
+    "is_breaking": false
 }}
 
 Headline: {raw_headline}"""
@@ -66,7 +73,7 @@ Headline: {raw_headline}"""
                 text = json_match.group(0)
                 
             content = json.loads(text)
-            return content.get("tagline", raw_headline).replace('"', '').replace("'", ""), content.get("summary", raw_headline)
+            return content.get("tagline", raw_headline).replace('"', '').replace("'", ""), content.get("summary", raw_headline), content.get("is_breaking", False)
             
         except Exception as e:
             print(f"AI Error on attempt {attempt+1}: {e}")
@@ -74,7 +81,7 @@ Headline: {raw_headline}"""
             
     # Fallback to original headline if AI completely fails
     print("AI failed after 3 attempts. Using fallback.")
-    return raw_headline, raw_headline
+    return raw_headline, raw_headline, False
 
 def fetch_fresh_news(history):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking RSS feeds...")
@@ -91,10 +98,11 @@ def fetch_fresh_news(history):
                     if news_id not in history:
                         raw_title = entry.title.split(" - ")[0]
                         print(f"Found new news: {raw_title}")
-                        tagline, summary = generate_ai_content(raw_title)
+                        tagline, summary, is_breaking = generate_ai_content(raw_title)
                         fresh_items.append({
                             'tagline': tagline,
                             'summary': summary,
+                            'is_breaking': is_breaking,
                             'original_title': raw_title,
                             'link': entry.link,
                             'source': url.split('.')[1].upper()
@@ -134,7 +142,8 @@ def create_poster(news):
     out_filename = f"LiveNews_{timestamp}.png"
     img_copy.save(out_filename)
     
-    caption_text = f"🚨 BREAKING NEWS 🚨\n\n{news['summary']}\n\nRead more at: {news['link']}\n\n#CivoraTimes #News #BreakingNews #India"
+    breaking_prefix = "🚨 BREAKING NEWS 🚨\n\n" if news.get('is_breaking') else ""
+    caption_text = f"{breaking_prefix}{news['summary']}\n\nRead more at: {news['link']}\n\n#CivoraTimes #News #India"
     
     return out_filename, caption_text
 
