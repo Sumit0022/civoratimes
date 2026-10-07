@@ -119,7 +119,7 @@ def create_poster(news):
         text=headline,
         bounding_box=padded_box, 
         font_path=FONT_PATH, 
-        max_font_size=180, # Increased max font size significantly
+        max_font_size=350, 
         key_word_index=key_idx
     )
     
