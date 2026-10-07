@@ -42,32 +42,39 @@ Respond ONLY with a valid JSON object in this format:
 
 Headline: {raw_headline}"""
 
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={API_KEY}"
-        headers = {'Content-Type': 'application/json'}
-        data = {"contents": [{"parts": [{"text": prompt}]}]}
-        
-        response = requests.post(url, headers=headers, json=data, timeout=120)
-        response.raise_for_status()
-        
-        result = response.json()
-        text = result['candidates'][0]['content']['parts'][0]['text']
-        
-        # Clean up markdown JSON formatting if present
-        text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={API_KEY}"
+    headers = {'Content-Type': 'application/json'}
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    
+    for attempt in range(3):
+        try:
+            response = requests.post(url, headers=headers, json=data, timeout=120)
             
-        content = json.loads(text.strip())
-        return content.get("tagline", raw_headline).replace('"', '').replace("'", ""), content.get("summary", raw_headline)
-    except Exception as e:
-        print(f"AI Error: {e}")
-        # Fallback to original headline if AI fails
-        return raw_headline, raw_headline
+            if response.status_code == 503:
+                print(f"AI Error 503 (High Demand). Retrying attempt {attempt+1}/3 in 10 seconds...")
+                time.sleep(10)
+                continue
+                
+            response.raise_for_status()
+            result = response.json()
+            text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+            
+            # Robust JSON extraction
+            import re
+            json_match = re.search(r'\{.*\}', text, re.DOTALL)
+            if json_match:
+                text = json_match.group(0)
+                
+            content = json.loads(text)
+            return content.get("tagline", raw_headline).replace('"', '').replace("'", ""), content.get("summary", raw_headline)
+            
+        except Exception as e:
+            print(f"AI Error on attempt {attempt+1}: {e}")
+            time.sleep(5)
+            
+    # Fallback to original headline if AI completely fails
+    print("AI failed after 3 attempts. Using fallback.")
+    return raw_headline, raw_headline
 
 def fetch_fresh_news(history):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking RSS feeds...")
