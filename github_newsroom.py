@@ -40,13 +40,15 @@ You must generate FOUR things:
 2. "summary": A detailed summary of the news story (around 100-250 words). IMPORTANT: Write this in very simple, basic English so a normal person can easily understand it without complex vocabulary. Use relevant emojis.
 3. "is_breaking": A boolean (true or false). Set to true ONLY if the news is a massive national event, huge emergency, or extremely critical political shift. Otherwise, set to false.
 4. "hashtags": Generate 5-7 highly relevant and currently trending Twitter hashtags based on the specific news topic. Always include #CivoraTimes. Format them as a single string (e.g., "#CivoraTimes #News #Topic").
+5. "highlight_phrase": Identify the 2-4 most impactful, essential words from the tagline (as a continuous phrase) that should be highlighted in red to grab attention. This MUST be an exact substring of your generated tagline.
 
 Respond ONLY with a valid JSON object in this format:
 {{
     "tagline": "SHORT HEADLINE HERE",
     "summary": "Simple English summary goes here...",
     "is_breaking": false,
-    "hashtags": "#CivoraTimes #Trending #Politics"
+    "hashtags": "#CivoraTimes #Trending #Politics",
+    "highlight_phrase": "HEADLINE HERE"
 }}
 
 Headline: {raw_headline}"""
@@ -79,7 +81,8 @@ Headline: {raw_headline}"""
                 content.get("tagline", raw_headline).replace('"', '').replace("'", ""), 
                 content.get("summary", raw_headline), 
                 content.get("is_breaking", False),
-                content.get("hashtags", "#CivoraTimes #News #India")
+                content.get("hashtags", "#CivoraTimes #News #India"),
+                content.get("highlight_phrase", "")
             )
             
         except Exception as e:
@@ -88,7 +91,7 @@ Headline: {raw_headline}"""
             
     # Fallback to original headline if AI completely fails
     print("AI failed after 3 attempts. Using fallback.")
-    return raw_headline, raw_headline, False, "#CivoraTimes #News #India"
+    return raw_headline, raw_headline, False, "#CivoraTimes #News #India", ""
 
 def fetch_fresh_news(history):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking RSS feeds...")
@@ -129,8 +132,21 @@ def create_poster(news):
     draw = ImageDraw.Draw(img_copy)
     
     words = headline.split()
-    longest_word = max(words, key=len) if words else ""
-    key_idx = words.index(longest_word) if words else 0
+    highlight_indices = []
+    
+    highlight_phrase = news.get('highlight_phrase', '').upper().strip()
+    if highlight_phrase:
+        # Find the sub-array of words that matches the highlight phrase
+        hw = highlight_phrase.split()
+        for i in range(len(words) - len(hw) + 1):
+            if words[i:i+len(hw)] == hw:
+                highlight_indices = list(range(i, i+len(hw)))
+                break
+                
+    # Fallback to the longest word if phrase matching fails
+    if not highlight_indices and words:
+        longest_word = max(words, key=len)
+        highlight_indices = [words.index(longest_word)]
     
     draw_adaptive_multicolor_text(
         draw=draw, 
@@ -138,7 +154,7 @@ def create_poster(news):
         bounding_box=padded_box, 
         font_path=FONT_PATH, 
         max_font_size=350, 
-        key_word_index=key_idx
+        highlight_indices=highlight_indices
     )
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -215,11 +231,12 @@ def main():
         
     for news in fresh_news:
         print(f"Processing AI for: {news['original_title']}")
-        tagline, summary, is_breaking, hashtags = generate_ai_content(news['original_title'])
+        tagline, summary, is_breaking, hashtags, highlight_phrase = generate_ai_content(news['original_title'])
         news['tagline'] = tagline
         news['summary'] = summary
         news['is_breaking'] = is_breaking
         news['hashtags'] = hashtags
+        news['highlight_phrase'] = highlight_phrase
         
         img_path, caption = create_poster(news)
         if img_path:

@@ -5,14 +5,14 @@ import string
 TEMPLATE_PATH = "news_template.png"
 FONT_PATH = "Montserrat-ExtraBold.ttf" 
 
-COLOR_TEXT = "#111111"
-COLOR_CIVORA_RED = "#D71920"
+COLOR_TEXT = "#020202"
+COLOR_CIVORA_RED = "#F90403"
 
 # Original coordinates
 main_tagline_box = [80, 280, 944, 850]
 
-# Apply uniform padding from all 4 sides (e.g., 60 pixels)
-PADDING = 60
+# Apply uniform padding from all 4 sides (cut in half from 60 to 30)
+PADDING = 30
 padded_box = [
     main_tagline_box[0] + PADDING,
     main_tagline_box[1] + PADDING,
@@ -20,7 +20,9 @@ padded_box = [
     main_tagline_box[3] - PADDING
 ]
 
-def draw_adaptive_multicolor_text(draw, text, bounding_box, font_path, max_font_size, key_word_index=0):
+def draw_adaptive_multicolor_text(draw, text, bounding_box, font_path, max_font_size, highlight_indices=None):
+    if highlight_indices is None:
+        highlight_indices = [0]
     x1, y1, x2, y2 = bounding_box
     max_width = x2 - x1
     max_height = y2 - y1
@@ -34,9 +36,8 @@ def draw_adaptive_multicolor_text(draw, text, bounding_box, font_path, max_font_
     
     words = text.split()
     
-    # We want to identify the key word. Let's say it's the one at `key_word_index`.
-    if key_word_index >= len(words):
-        key_word_index = len(words) - 1
+    # Filter highlight indices to make sure they are within bounds
+    highlight_indices = [i for i in highlight_indices if i < len(words)]
         
     while font_size > 10:
         try:
@@ -110,7 +111,7 @@ def draw_adaptive_multicolor_text(draw, text, bounding_box, font_path, max_font_
         
         for word in line:
             # Determine color
-            color = COLOR_CIVORA_RED if word_counter == key_word_index else COLOR_TEXT
+            color = COLOR_CIVORA_RED if word_counter in highlight_indices else COLOR_TEXT
             
             # Draw the word
             draw.text((current_x, current_y), word, font=best_font, fill=color)
@@ -133,12 +134,12 @@ def main():
     img = bg.convert("RGB")
     
     sample_headlines = [
-        ("BIG BREAKING: SUPREME COURT STRIKES DOWN ELECTORAL BONDS AHEAD OF ELECTIONS.", 3), # "SUPREME"
-        ("GOVERNMENT ANNOUNCES NEW SUBSIDY SCHEME FOR FARMERS.", 3), # "SUBSIDY"
-        ("THE RESERVE BANK OF INDIA KEEPS REPO RATE UNCHANGED AT 6.5 PERCENT AMIDST GLOBAL ECONOMIC UNCERTAINTY.", 7) # "UNCHANGED"
+        ("BIG BREAKING: SUPREME COURT STRIKES DOWN ELECTORAL BONDS AHEAD OF ELECTIONS.", [3, 4, 5]), # "SUPREME COURT STRIKES"
+        ("GOVERNMENT ANNOUNCES NEW SUBSIDY SCHEME FOR FARMERS.", [3, 4]), # "SUBSIDY SCHEME"
+        ("THE RESERVE BANK OF INDIA KEEPS REPO RATE UNCHANGED AT 6.5 PERCENT AMIDST GLOBAL ECONOMIC UNCERTAINTY.", [7, 8]) # "UNCHANGED AT"
     ]
     
-    for i, (headline, key_idx) in enumerate(sample_headlines):
+    for i, (headline, highlight_idx_list) in enumerate(sample_headlines):
         img_copy = img.copy()
         draw_copy = ImageDraw.Draw(img_copy)
         
@@ -148,7 +149,7 @@ def main():
             bounding_box=padded_box, 
             font_path=FONT_PATH, 
             max_font_size=150, 
-            key_word_index=key_idx
+            highlight_indices=highlight_idx_list
         )
         
         out_name = f"test_poster_v3_{i+1}.png"
