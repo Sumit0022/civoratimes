@@ -30,6 +30,7 @@ on:
 
 jobs:
   post_tweet:
+    if: false  # Paused by user request
     runs-on: ubuntu-latest
 
     steps:
