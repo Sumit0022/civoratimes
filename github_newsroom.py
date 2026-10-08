@@ -53,7 +53,7 @@ Respond ONLY with a valid JSON object in this format:
 
 Headline: {raw_headline}"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={API_KEY}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": prompt}]}]}
     
@@ -136,10 +136,18 @@ def create_poster(news):
     
     highlight_phrase = news.get('highlight_phrase', '').upper().strip()
     if highlight_phrase:
-        # Find the sub-array of words that matches the highlight phrase
+        import string
+        def clean_word(w):
+            return w.strip(string.punctuation)
+            
         hw = highlight_phrase.split()
         for i in range(len(words) - len(hw) + 1):
-            if words[i:i+len(hw)] == hw:
+            match = True
+            for j in range(len(hw)):
+                if clean_word(words[i+j]) != clean_word(hw[j]):
+                    match = False
+                    break
+            if match:
                 highlight_indices = list(range(i, i+len(hw)))
                 break
                 
