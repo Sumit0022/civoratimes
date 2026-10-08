@@ -35,19 +35,22 @@ def save_to_history(news_id):
 
 def generate_ai_content(raw_headline):
     prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics. I will give you a news headline. 
-You must generate FOUR things:
+You must generate FIVE things:
 1. "tagline": A catchy, punchy, and extremely bold tagline for the poster (MAXIMUM 15 words). Do not use quotes or emojis.
-2. "summary": A detailed summary of the news story (around 100-250 words). IMPORTANT: Write this in very simple, basic English so a normal person can easily understand it without complex vocabulary. Use relevant emojis.
-3. "is_breaking": A boolean (true or false). Set to true ONLY if the news is a massive national event, huge emergency, or extremely critical political shift. Otherwise, set to false.
-4. "hashtags": Generate 5-7 highly relevant and currently trending Twitter hashtags based on the specific news topic. Always include #CivoraTimes. Format them as a single string (e.g., "#CivoraTimes #News #Topic").
-5. "highlight_phrase": Identify the 2-4 most impactful, essential words from the tagline (as a continuous phrase) that should be highlighted in red to grab attention. This MUST be an exact substring of your generated tagline.
+2. "summary": The caption MUST be short and punchy. First line must be a hook, not an essay. No long emoji paragraphs. Format it strictly as:
+   [Hook/Location]: [1 line of what happened]
+   Fact: [1 line fact]
+   Source: [News Source]
+3. "is_breaking": A boolean (true or false).
+4. "hashtags": Generate EXACTLY 1 or 2 highly searchable, generic hashtags based on the location or core topic (e.g., #Lucknow, #UPPolitics, #Election). DO NOT use brand tags like #CivoraTimes.
+5. "highlight_phrase": Identify the 2-4 most impactful words from the tagline to be highlighted in red. This MUST be an exact substring of the tagline.
 
 Respond ONLY with a valid JSON object in this format:
 {{
     "tagline": "SHORT HEADLINE HERE",
-    "summary": "Simple English summary goes here...",
+    "summary": "Lucknow: Gomti gharo mein ghus gayi...\\nFact: ...\\nSource: ...",
     "is_breaking": false,
-    "hashtags": "#CivoraTimes #Trending #Politics",
+    "hashtags": "#Lucknow #Flood",
     "highlight_phrase": "HEADLINE HERE"
 }}
 
