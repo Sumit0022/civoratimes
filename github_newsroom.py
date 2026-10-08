@@ -53,17 +53,32 @@ Respond ONLY with a valid JSON object in this format:
 
 Headline: {raw_headline}"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={API_KEY}"
+    MODELS = [
+        "gemini-3.6-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-pro"
+    ]
+    
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": prompt}]}]}
     
-    for attempt in range(3):
+    for model_name in MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={API_KEY}"
+        print(f"Trying AI model: {model_name}...")
         try:
-            response = requests.post(url, headers=headers, json=data, timeout=120)
+            response = requests.post(url, headers=headers, json=data, timeout=30)
             
+            if response.status_code == 429:
+                print(f"Model {model_name} quota exhausted. Trying next model...")
+                continue
+                
             if response.status_code == 503:
-                print(f"AI Error 503 (High Demand). Retrying attempt {attempt+1}/3 in 10 seconds...")
-                time.sleep(10)
+                print(f"Model {model_name} overloaded (503). Trying next model...")
                 continue
                 
             response.raise_for_status()
@@ -86,11 +101,11 @@ Headline: {raw_headline}"""
             )
             
         except Exception as e:
-            print(f"AI Error on attempt {attempt+1}: {e}")
-            time.sleep(5)
+            print(f"Error with model {model_name}: {e}")
+            continue
             
-    # Fallback to original headline if AI completely fails
-    print("AI failed after 3 attempts. Using fallback.")
+    # Fallback to original headline if ALL models completely fail
+    print("All AI models failed or exhausted quota. Using fallback.")
     return raw_headline, raw_headline, False, "#CivoraTimes #News #India", ""
 
 def fetch_fresh_news(history):
