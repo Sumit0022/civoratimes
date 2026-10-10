@@ -133,6 +133,7 @@ def process_telegram_links():
                     success, error_msg = post_to_twitter(img_path, caption)
                     if success:
                         send_msg(f"✅ Successfully posted to your X account!\n\nCaption used:\n{caption}")
+                        with open("telegram_posted.flag", "w") as f: f.write("1")
                     else:
                         send_msg(f"❌ Failed to post to X.\nError: {error_msg}")
                 else:
@@ -163,6 +164,7 @@ def process_telegram_links():
                 success, error_msg = post_to_twitter(img_path, caption)
                 if success:
                     send_msg(f"✅ Successfully posted manual news to X!\n\nCaption used:\n{caption}")
+                    with open("telegram_posted.flag", "w") as f: f.write("1")
                 else:
                     send_msg(f"❌ Failed to post manual news to X.\nError: {error_msg}")
             else:

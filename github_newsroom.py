@@ -316,6 +316,11 @@ def post_to_twitter(image_path, caption):
         return False, str(e)
 
 def main():
+    if os.path.exists("telegram_posted.flag"):
+        print("Telegram manual post took priority this cycle. Skipping RSS feeds to avoid spam.")
+        os.remove("telegram_posted.flag")
+        return
+
     history = load_history()
     posted_titles = load_titles()
     fresh_news = fetch_fresh_news(history, posted_titles)
