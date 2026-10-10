@@ -45,7 +45,7 @@ def generate_ai_content(raw_headline):
     prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics and breaking emergencies. I will give you a news headline about the current Delhi protest/emergency and CJP. 
 You must generate SIX things:
 1. "tagline": A catchy, punchy, and extremely bold tagline for the poster (MAXIMUM 15 words). Do not use quotes or emojis.
-2. "summary": Provide a detailed 4-5 line comprehensive brief about the situation. Capture the tension, force deployment, CJP updates, and exact ground details. DO NOT use explicit labels. Write it as a flowing, highly engaging news update.
+2. "summary": Provide a detailed 4-5 line comprehensive brief about the situation. Capture the tension, force deployment, CJP updates, EXPLICITLY mention who is being detained or arrested (names, groups, or numbers), and exact ground details. DO NOT use explicit labels. Write it as a flowing, highly engaging news update.
 3. "is_breaking": Set to true as this is an ongoing emergency.
 4. "hashtags": Generate EXACTLY 2 highly searchable, generic hashtags (e.g., #DelhiProtest, #CJP). DO NOT use brand tags.
 5. "highlight_phrase": Identify the 2-4 most impactful words from the tagline to be highlighted in red. This MUST be an exact substring of the tagline.
