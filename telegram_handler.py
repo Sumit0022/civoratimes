@@ -129,11 +129,11 @@ def process_telegram_links():
 
             if img_path:
                 send_msg("📤 Uploading to X (Twitter)...")
-                success = post_to_twitter(img_path, caption)
+                success, error_msg = post_to_twitter(img_path, caption)
                 if success:
                     send_msg(f"✅ Successfully posted to your X account!\n\nCaption used:\n{caption}")
                 else:
-                    send_msg("❌ Failed to post to X.")
+                    send_msg(f"❌ Failed to post to X.\nError: {error_msg}")
             else:
                 send_msg("❌ Error creating poster or downloading media.")
                 
