@@ -90,7 +90,6 @@ def process_telegram_links():
             
             img_path = None
             if media_urls:
-                # Try to use the first attached image from the tweet
                 media_url = media_urls[0]
                 if media_url.endswith(('.png', '.jpg', '.jpeg')):
                     img_path = "tweet_media.jpg"
@@ -99,6 +98,17 @@ def process_telegram_links():
                             f.write(requests.get(media_url, timeout=15).content)
                     except:
                         img_path = None
+                else:
+                    # It might be a video. Check media_extended for thumbnail
+                    media_ext = tweet_data.get("media_extended", [])
+                    if media_ext and media_ext[0].get("thumbnail_url"):
+                        thumb = media_ext[0]["thumbnail_url"]
+                        img_path = "tweet_media.jpg"
+                        try:
+                            with open(img_path, 'wb') as f:
+                                f.write(requests.get(thumb, timeout=15).content)
+                        except:
+                            img_path = None
             
             if not img_path:
                 # Fallback to creating our classic red/black poster if no image or it's a video
