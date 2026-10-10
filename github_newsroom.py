@@ -303,12 +303,6 @@ def post_to_twitter(image_path, caption):
             media = api_v1.media_upload(image_path)
             
         print("Posting tweet...")
-        # X character limit is 280.
-        # Media takes 0 chars in v2 API.
-        if len(caption) > 280:
-            print(f"Caption too long ({len(caption)} chars), truncating...")
-            caption = caption[:277] + "..."
-            
         response = client.create_tweet(text=caption, media_ids=[media.media_id])
         print(f"Successfully posted! Tweet ID: {response.data['id']}")
         return True, ""
