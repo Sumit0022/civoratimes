@@ -297,7 +297,7 @@ def post_to_twitter(image_path, caption):
                     
             if processing_info and processing_info.get('state') == 'failed':
                 print("Twitter video processing failed!")
-                return False
+                return False, "Twitter backend failed to process this video. The file might be too large or unsupported on the Free API tier."
                 
         else:
             media = api_v1.media_upload(image_path)
