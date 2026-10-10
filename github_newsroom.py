@@ -303,11 +303,12 @@ def post_to_twitter(image_path, caption):
             media = api_v1.media_upload(image_path)
             
         print("Posting tweet...")
-        # X character limit is 280, but if it has Twitter Blue it might be longer.
-        # Let's ensure the caption is truncated to 280 chars to be safe if they don't have premium.
-        # Actually, Twitter API handles links as 23 chars. Let's just limit the summary slightly if needed.
-        # But wait! Basic API limits to 280 chars. 
-        # I should truncate it in the code if needed.
+        # X character limit is 280.
+        # Media takes 0 chars in v2 API.
+        if len(caption) > 280:
+            print(f"Caption too long ({len(caption)} chars), truncating...")
+            caption = caption[:277] + "..."
+            
         response = client.create_tweet(text=caption, media_ids=[media.media_id])
         print(f"Successfully posted! Tweet ID: {response.data['id']}")
         return True, ""
