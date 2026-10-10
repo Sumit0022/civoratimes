@@ -284,8 +284,8 @@ def main():
             
             if success_tw:
                 save_to_history(news['link'])
-                print("Posted one news item.")
-                time.sleep(20)  # Wait before posting the next one to avoid rate limits
+                print("Posted one news item. Exiting to wait for next cron run.")
+                break
     
     print("Emergency news run complete.")
 
