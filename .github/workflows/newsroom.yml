@@ -38,12 +38,13 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          python telegram_handler.py
           python github_newsroom.py
 
       - name: Commit posted_news.txt back to repo
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add posted_news.txt
+          git add posted_news.txt telegram_offset.txt
           # Only commit and push if there are changes (i.e. new news was posted)
           git diff --staged --quiet || (git commit -m "Updated posted_news.txt" && git push)
