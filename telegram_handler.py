@@ -136,6 +136,7 @@ def process_telegram_links():
                         with open("telegram_posted.flag", "w") as f: f.write("1")
                     else:
                         send_msg(f"❌ Failed to post to X.\nError: {error_msg}")
+                        with open("error.log", "w", encoding="utf-8") as err_f: err_f.write(f"Link post error: {error_msg}")
                 else:
                     send_msg("❌ Error creating poster or downloading media.")
         elif text and not text.startswith('/'):
@@ -167,6 +168,7 @@ def process_telegram_links():
                     with open("telegram_posted.flag", "w") as f: f.write("1")
                 else:
                     send_msg(f"❌ Failed to post manual news to X.\nError: {error_msg}")
+                    with open("error.log", "w", encoding="utf-8") as err_f: err_f.write(f"Manual text error: {error_msg}")
             else:
                 send_msg("❌ Error creating poster for manual news.")
                 
