@@ -91,7 +91,14 @@ def process_telegram_links():
             img_path = None
             if media_urls:
                 media_url = media_urls[0]
-                if media_url.endswith(('.png', '.jpg', '.jpeg')):
+                if media_url.endswith('.mp4'):
+                    img_path = "tweet_video.mp4"
+                    try:
+                        with open(img_path, 'wb') as f:
+                            f.write(requests.get(media_url, timeout=30).content)
+                    except:
+                        img_path = None
+                elif media_url.endswith(('.png', '.jpg', '.jpeg')):
                     img_path = "tweet_media.jpg"
                     try:
                         with open(img_path, 'wb') as f:
@@ -99,14 +106,13 @@ def process_telegram_links():
                     except:
                         img_path = None
                 else:
-                    # It might be a video. Check media_extended for thumbnail
+                    # Check media_extended just in case
                     media_ext = tweet_data.get("media_extended", [])
-                    if media_ext and media_ext[0].get("thumbnail_url"):
-                        thumb = media_ext[0]["thumbnail_url"]
-                        img_path = "tweet_media.jpg"
+                    if media_ext and media_ext[0].get("url", "").endswith('.mp4'):
+                        img_path = "tweet_video.mp4"
                         try:
                             with open(img_path, 'wb') as f:
-                                f.write(requests.get(thumb, timeout=15).content)
+                                f.write(requests.get(media_ext[0]["url"], timeout=30).content)
                         except:
                             img_path = None
             

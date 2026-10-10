@@ -241,7 +241,14 @@ def post_to_twitter(image_path, caption):
         )
         
         print("Uploading media to X...")
-        media = api_v1.media_upload(image_path)
+        if image_path.lower().endswith('.mp4'):
+            media = api_v1.media_upload(image_path, media_category="tweet_video", chunked=True)
+            import time
+            print("Waiting 15 seconds for Twitter to process the video...")
+            time.sleep(15) # Wait for backend processing
+        else:
+            media = api_v1.media_upload(image_path)
+            
         print("Posting tweet...")
         # X character limit is 280, but if it has Twitter Blue it might be longer.
         # Let's ensure the caption is truncated to 280 chars to be safe if they don't have premium.
