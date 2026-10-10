@@ -13,12 +13,12 @@ from generate_news_poster import draw_adaptive_multicolor_text, padded_box, FONT
 HISTORY_FILE = "posted_news.txt"
 
 FEEDS = [
-    # Top Priority: Delhi Protests, Police action, Emergency
-    'https://news.google.com/rss/search?q=(Delhi+OR+New+Delhi)+(protest+OR+clash+OR+police+OR+emergency+OR+march)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
-    # Secondary: Specific high-alert keywords
-    'https://news.google.com/rss/search?q=(Delhi+police+force+OR+Delhi+border+OR+lathi+charge+OR+detained)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
-    # Broad Delhi news to catch anything breaking immediately
-    'https://news.google.com/rss/search?q=Delhi+breaking+news+when:1h&hl=en-IN&gl=IN&ceid=IN:en'
+    # Top Priority: Delhi Protests, CJP, Police action, Emergency
+    'https://news.google.com/rss/search?q=(Delhi+OR+New+Delhi)+(protest+OR+clash+OR+police+OR+CJP)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
+    # Secondary: Specific high-alert keywords around CJP and force
+    'https://news.google.com/rss/search?q=(CJP+protest+OR+Delhi+police+force+OR+lathi+charge+OR+detained)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
+    # Broad Delhi breaking news to catch anything concrete immediately
+    'https://news.google.com/rss/search?q=(Delhi+breaking+news+OR+Delhi+emergency)+when:1h&hl=en-IN&gl=IN&ceid=IN:en'
 ]
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -34,21 +34,23 @@ def save_to_history(news_id):
         f.write(news_id + "\n")
 
 def generate_ai_content(raw_headline):
-    prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics and breaking emergencies. I will give you a news headline about the current Delhi protest/emergency. 
-You must generate FIVE things:
+    prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics and breaking emergencies. I will give you a news headline about the current Delhi protest/emergency and CJP. 
+You must generate SIX things:
 1. "tagline": A catchy, punchy, and extremely bold tagline for the poster (MAXIMUM 15 words). Do not use quotes or emojis.
-2. "summary": Provide a detailed 4-5 line comprehensive brief about the situation. Capture the tension, force deployment, and exact details. DO NOT use explicit labels like "Hook:", "Fact:", or "Source:". Write it as a flowing, highly engaging news update.
+2. "summary": Provide a detailed 4-5 line comprehensive brief about the situation. Capture the tension, force deployment, CJP updates, and exact ground details. DO NOT use explicit labels. Write it as a flowing, highly engaging news update.
 3. "is_breaking": Set to true as this is an ongoing emergency.
-4. "hashtags": Generate EXACTLY 2 highly searchable, generic hashtags (e.g., #DelhiProtest, #DelhiPolice). DO NOT use brand tags like #CivoraTimes.
+4. "hashtags": Generate EXACTLY 2 highly searchable, generic hashtags (e.g., #DelhiProtest, #CJP). DO NOT use brand tags.
 5. "highlight_phrase": Identify the 2-4 most impactful words from the tagline to be highlighted in red. This MUST be an exact substring of the tagline.
+6. "skip": A boolean (true or false). Set to true ONLY if the headline is vague, an opinion piece, or lacks concrete on-ground facts about the Delhi protests/CJP. Set to false if it contains hard news and facts.
 
 Respond ONLY with a valid JSON object in this format:
 {{
     "tagline": "SHORT HEADLINE HERE",
-    "summary": "Massive forces have been deployed at the borders as protesters clash with police... (4-5 lines of detailed text)",
+    "summary": "Massive forces have been deployed at the borders... (4-5 lines of detailed text)",
     "is_breaking": true,
-    "hashtags": "#DelhiProtest #Delhi",
-    "highlight_phrase": "HEADLINE HERE"
+    "hashtags": "#DelhiProtest #CJP",
+    "highlight_phrase": "HEADLINE HERE",
+    "skip": false
 }}
 
 Headline: {raw_headline}"""
@@ -97,7 +99,8 @@ Headline: {raw_headline}"""
                 content.get("summary", raw_headline), 
                 content.get("is_breaking", False),
                 content.get("hashtags", "#CivoraTimes #News #India"),
-                content.get("highlight_phrase", "")
+                content.get("highlight_phrase", ""),
+                content.get("skip", False)
             )
             
         except Exception as e:
@@ -106,7 +109,7 @@ Headline: {raw_headline}"""
             
     # Fallback to original headline if ALL models completely fail
     print("All AI models failed or exhausted quota. Using fallback.")
-    return raw_headline, raw_headline, False, "#CivoraTimes #News #India", ""
+    return raw_headline, raw_headline, False, "#CivoraTimes #News #India", "", False
 
 def fetch_fresh_news(history):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking RSS feeds...")
@@ -254,7 +257,12 @@ def main():
         
     for news in fresh_news:
         print(f"Processing AI for: {news['original_title']}")
-        tagline, summary, is_breaking, hashtags, highlight_phrase = generate_ai_content(news['original_title'])
+        tagline, summary, is_breaking, hashtags, highlight_phrase, should_skip = generate_ai_content(news['original_title'])
+        
+        if should_skip:
+            print("AI marked this news as vague/irrelevant. Skipping.")
+            continue
+            
         news['tagline'] = tagline
         news['summary'] = summary
         news['is_breaking'] = is_breaking
