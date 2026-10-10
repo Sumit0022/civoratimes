@@ -78,8 +78,8 @@ def process_telegram_links():
                 media_urls = tweet_data.get("mediaURLs", [])
                 
                 send_msg("🧠 Sending to AI for News Brief generation...")
-                # We construct a prompt-friendly raw headline
-                ai_input = f"Official Notice/Statement by {author}: {tweet_text[:300]}"
+                # We construct a prompt-friendly raw headline with explicit framing instructions
+                ai_input = f"TWEET FROM {author}: '{tweet_text[:400]}'. INSTRUCTION FOR AI: Frame the tagline and summary directly around this leader's statement, e.g., '{author} Warns...', '{author} Slams...', '{author} Demands...'. Focus on their exact claim."
                 tagline, summary, is_breaking, hashtags, highlight_phrase, should_skip = generate_ai_content(ai_input)
                 
                 if should_skip:
