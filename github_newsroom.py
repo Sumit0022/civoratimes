@@ -12,13 +12,21 @@ from generate_news_poster import draw_adaptive_multicolor_text, padded_box, FONT
 
 HISTORY_FILE = "posted_news.txt"
 
+import urllib.parse
+
+# 11 Independent/Left-leaning credible sources
+sites_g1 = "site:thewire.in OR site:newslaundry.com OR site:scroll.in OR site:nationalheraldindia.com"
+sites_g2 = "site:thequint.com OR site:caravanmagazine.in OR site:article-14.com OR site:maktoobmedia.com"
+sites_g3 = "site:thenewsminute.com OR site:altnews.in OR site:deccanherald.com"
+
+q1 = f"(Delhi OR New Delhi OR CJP OR protest OR police) ({sites_g1}) when:3h"
+q2 = f"(Delhi OR New Delhi OR CJP OR protest OR police) ({sites_g2}) when:3h"
+q3 = f"(Delhi OR New Delhi OR CJP OR protest OR police) ({sites_g3}) when:3h"
+
 FEEDS = [
-    # Top Priority: Delhi Protests, CJP, Police action, Emergency
-    'https://news.google.com/rss/search?q=(Delhi+OR+New+Delhi)+(protest+OR+clash+OR+police+OR+CJP)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
-    # Secondary: Specific high-alert keywords around CJP and force
-    'https://news.google.com/rss/search?q=(CJP+protest+OR+Delhi+police+force+OR+lathi+charge+OR+detained)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
-    # Broad Delhi breaking news to catch anything concrete immediately
-    'https://news.google.com/rss/search?q=(Delhi+breaking+news+OR+Delhi+emergency)+when:1h&hl=en-IN&gl=IN&ceid=IN:en'
+    f"https://news.google.com/rss/search?q={urllib.parse.quote(q1)}&hl=en-IN&gl=IN&ceid=IN:en",
+    f"https://news.google.com/rss/search?q={urllib.parse.quote(q2)}&hl=en-IN&gl=IN&ceid=IN:en",
+    f"https://news.google.com/rss/search?q={urllib.parse.quote(q3)}&hl=en-IN&gl=IN&ceid=IN:en"
 ]
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
