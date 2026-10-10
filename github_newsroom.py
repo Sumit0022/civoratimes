@@ -11,8 +11,10 @@ import tweepy
 from generate_news_poster import draw_adaptive_multicolor_text, padded_box, FONT_PATH, TEMPLATE_PATH
 
 HISTORY_FILE = "posted_news.txt"
+TITLES_FILE = "posted_titles.txt"
 
 import urllib.parse
+import re
 
 # 11 Independent/Left-leaning credible sources
 sites_g1 = "site:thewire.in OR site:newslaundry.com OR site:scroll.in OR site:nationalheraldindia.com"
@@ -40,6 +42,25 @@ def load_history():
 def save_to_history(news_id):
     with open(HISTORY_FILE, 'a', encoding='utf-8') as f:
         f.write(news_id + "\n")
+
+def load_titles():
+    if not os.path.exists(TITLES_FILE):
+        return []
+    with open(TITLES_FILE, 'r', encoding='utf-8') as f:
+        return [line.strip() for line in f if line.strip()]
+
+def save_title(title):
+    with open(TITLES_FILE, 'a', encoding='utf-8') as f:
+        f.write(title.replace('\n', ' ') + "\n")
+
+def is_similar(t1, t2):
+    stop = {'the', 'in', 'of', 'and', 'to', 'a', 'is', 'for', 'on', 'by', 'at', 'with', 'from', 'as', 'are', 'scroll', 'wire', 'quint', 'newslaundry'}
+    w1 = set(w.lower() for w in re.findall(r'\w+', t1)) - stop
+    w2 = set(w.lower() for w in re.findall(r'\w+', t2)) - stop
+    if not w1 or not w2:
+        return False
+    intersection = w1.intersection(w2)
+    return (len(intersection) / min(len(w1), len(w2))) > 0.55
 
 def generate_ai_content(raw_headline):
     prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics and breaking emergencies. I will give you a news headline about the current Delhi protest/emergency and CJP. 
@@ -119,7 +140,7 @@ Headline: {raw_headline}"""
     print("All AI models failed or exhausted quota. Using fallback.")
     return raw_headline, raw_headline, False, "#CivoraTimes #News #India", "", False
 
-def fetch_fresh_news(history):
+def fetch_fresh_news(history, posted_titles):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking RSS feeds...")
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     fresh_items = []
@@ -129,16 +150,28 @@ def fetch_fresh_news(history):
             r = requests.get(url, headers=headers, timeout=10)
             feed = feedparser.parse(r.text)
             if feed.entries:
-                for entry in feed.entries[:3]:
+                for entry in feed.entries[:5]:
                     news_id = entry.link
                     if news_id not in history:
                         raw_title = entry.title.split(" - ")[0]
-                        print(f"Found new news candidate: {raw_title}")
-                        fresh_items.append({
-                            'original_title': raw_title,
-                            'link': entry.link,
-                            'source': url.split('.')[1].upper()
-                        })
+                        
+                        # Semantic deduplication check
+                        is_duplicate = False
+                        for old_title in posted_titles[-50:]:  # Check last 50 titles
+                            if is_similar(raw_title, old_title):
+                                is_duplicate = True
+                                print(f"Skipping duplicate event: '{raw_title}' is too similar to '{old_title}'")
+                                history.add(news_id)
+                                save_to_history(news_id)
+                                break
+                                
+                        if not is_duplicate:
+                            print(f"Found new news candidate: {raw_title}")
+                            fresh_items.append({
+                                'original_title': raw_title,
+                                'link': entry.link,
+                                'source': url.split('.')[1].upper()
+                            })
         except Exception as e:
             print(f"Error fetching {url}: {e}")
     return fresh_items
@@ -284,7 +317,8 @@ def post_to_twitter(image_path, caption):
 
 def main():
     history = load_history()
-    fresh_news = fetch_fresh_news(history)
+    posted_titles = load_titles()
+    fresh_news = fetch_fresh_news(history, posted_titles)
     
     if not fresh_news:
         print("No new news found.")
@@ -311,6 +345,7 @@ def main():
             
             if success_tw:
                 save_to_history(news['link'])
+                save_title(news['original_title'])
                 print("Posted one news item. Exiting to wait for next cron run.")
                 break
     
