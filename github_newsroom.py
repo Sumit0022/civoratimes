@@ -54,9 +54,20 @@ def save_title(title):
         f.write(title.replace('\n', ' ') + "\n")
 
 def is_similar(t1, t2):
-    stop = {'the', 'in', 'of', 'and', 'to', 'a', 'is', 'for', 'on', 'by', 'at', 'with', 'from', 'as', 'are', 'scroll', 'wire', 'quint', 'newslaundry'}
-    w1 = set(w.lower() for w in re.findall(r'\w+', t1)) - stop
-    w2 = set(w.lower() for w in re.findall(r'\w+', t2)) - stop
+    stop = {'the', 'in', 'of', 'and', 'to', 'a', 'is', 'for', 'on', 'by', 'at', 'with', 'from', 'as', 'are', 'scroll', 'wire', 'quint', 'newslaundry', 'news', 'minute', 'alt', 'caravan'}
+    
+    def clean_word(w):
+        w = w.lower()
+        if w.endswith('ies'): return w[:-3] + 'y'
+        if w.endswith('es'): return w[:-2]
+        if w.endswith('s') and not w.endswith('ss'): return w[:-1]
+        if w.endswith('ed'): return w[:-2]
+        if w.endswith('ing'): return w[:-3]
+        return w
+
+    w1 = set(clean_word(w) for w in re.findall(r'\w+', t1)) - stop
+    w2 = set(clean_word(w) for w in re.findall(r'\w+', t2)) - stop
+    
     if not w1 or not w2:
         return False
     intersection = w1.intersection(w2)
