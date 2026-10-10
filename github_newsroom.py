@@ -273,37 +273,44 @@ def post_to_twitter(image_path, caption):
             access_token_secret=os.environ.get("TWITTER_ACCESS_TOKEN_SECRET")
         )
         
-        print("Uploading media to X...")
-        if image_path.lower().endswith('.mp4'):
-            media = api_v1.media_upload(image_path, media_category="tweet_video", chunked=True)
-            print("Video uploaded. Checking processing status...")
-            import time
-            processing_info = getattr(media, 'processing_info', None)
-            while processing_info and processing_info.get('state') in ['pending', 'in_progress']:
-                wait_time = processing_info.get('check_after_secs', 5)
-                print(f"Waiting {wait_time} seconds for video processing...")
-                time.sleep(wait_time)
-                
-                # Fetch updated status
-                # Free tier might fail on get_media_upload_status but let's try
-                try:
-                    # In Tweepy v4, get_media_upload_status is not directly on API sometimes, it's on chunked upload, but let's use the standard endpoint
-                    media_status = api_v1.get_media_upload_status(media.media_id)
-                    processing_info = getattr(media_status, 'processing_info', None)
-                except Exception as e:
-                    print(f"Status check error: {e}. Just waiting 15s and hoping for the best.")
-                    time.sleep(15)
-                    break
+        media_ids = []
+        if image_path:
+            print("Uploading media to X...")
+            if image_path.lower().endswith('.mp4'):
+                media = api_v1.media_upload(image_path, media_category="tweet_video", chunked=True)
+                print("Video uploaded. Checking processing status...")
+                import time
+                processing_info = getattr(media, 'processing_info', None)
+                while processing_info and processing_info.get('state') in ['pending', 'in_progress']:
+                    wait_time = processing_info.get('check_after_secs', 5)
+                    print(f"Waiting {wait_time} seconds for video processing...")
+                    time.sleep(wait_time)
                     
-            if processing_info and processing_info.get('state') == 'failed':
-                print("Twitter video processing failed!")
-                return False, "Twitter backend failed to process this video. The file might be too large or unsupported on the Free API tier."
+                    try:
+                        media_status = api_v1.get_media_upload_status(media.media_id)
+                        processing_info = getattr(media_status, 'processing_info', None)
+                    except Exception as e:
+                        print(f"Status check error: {e}. Just waiting 15s and hoping for the best.")
+                        time.sleep(15)
+                        break
+                        
+                if processing_info and processing_info.get('state') == 'failed':
+                    print("Twitter video processing failed!")
+                    return False, "Twitter backend failed to process this video. The file might be too large or unsupported on the Free API tier."
                 
-        else:
-            media = api_v1.media_upload(image_path)
+                media_ids = [media.media_id]
+            else:
+                media = api_v1.media_upload(image_path)
+                media_ids = [media.media_id]
             
         print("Posting tweet...")
-        response = client.create_tweet(text=caption, media_ids=[media.media_id])
+        
+        # client.create_tweet wants media_ids as a list or omitted
+        kwargs = {"text": caption}
+        if media_ids:
+            kwargs["media_ids"] = media_ids
+            
+        response = client.create_tweet(**kwargs)
         print(f"Successfully posted! Tweet ID: {response.data['id']}")
         return True, ""
     except Exception as e:

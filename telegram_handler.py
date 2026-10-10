@@ -77,17 +77,12 @@ def process_telegram_links():
                 author = tweet_data.get("user_name", "")
                 media_urls = tweet_data.get("mediaURLs", [])
                 
-                send_msg("🧠 Sending to AI for News Brief generation...")
-                # We construct a prompt-friendly raw headline with explicit framing instructions
-                ai_input = f"TWEET FROM {author}: '{tweet_text[:400]}'. INSTRUCTION FOR AI: Frame the tagline and summary directly around this leader's statement, e.g., '{author} Warns...', '{author} Slams...', '{author} Demands...'. Focus on their exact claim."
-                tagline, summary, is_breaking, hashtags, highlight_phrase, should_skip = generate_ai_content(ai_input)
-                
-                if should_skip:
-                    send_msg("⚠️ AI skipped this tweet (marked as vague or irrelevant to current filters).")
-                    continue
-                    
-                breaking_prefix = "🚨 BREAKING NEWS 🚨\n\n" if is_breaking else ""
-                caption = f"{breaking_prefix}{summary}\n\n{hashtags}"
+                # Check for manual caption override
+                manual_caption = None
+                if "caption:" in text.lower():
+                    # Extract everything after 'caption:' (case-insensitive)
+                    idx = text.lower().find("caption:") + len("caption:")
+                    manual_caption = text[idx:].strip()
                 
                 img_path = None
                 if media_urls:
@@ -117,28 +112,43 @@ def process_telegram_links():
                             except:
                                 img_path = None
                 
-                if not img_path:
-                    # Fallback to creating our classic red/black poster if no image or it's a video
-                    news_dict = {
-                        'tagline': tagline,
-                        'summary': summary,
-                        'is_breaking': is_breaking,
-                        'hashtags': hashtags,
-                        'highlight_phrase': highlight_phrase
-                    }
-                    img_path, _ = create_poster(news_dict)
-
-                if img_path:
-                    send_msg("📤 Uploading to X (Twitter)...")
-                    success, error_msg = post_to_twitter(img_path, caption)
-                    if success:
-                        send_msg(f"✅ Successfully posted to your X account!\n\nCaption used:\n{caption}")
-                        with open("telegram_posted.flag", "w") as f: f.write("1")
-                    else:
-                        send_msg(f"❌ Failed to post to X.\nError: {error_msg}")
-                        with open("error.log", "w", encoding="utf-8") as err_f: err_f.write(f"Link post error: {error_msg}")
+                if manual_caption:
+                    send_msg("🎯 Manual caption detected! Bypassing AI and posting directly...")
+                    caption = manual_caption
+                    # No poster is created, we just use the downloaded image/video (if any)
                 else:
-                    send_msg("❌ Error creating poster or downloading media.")
+                    send_msg("🧠 Sending to AI for News Brief generation...")
+                    ai_input = f"TWEET FROM {author}: '{tweet_text[:400]}'. INSTRUCTION FOR AI: Frame the tagline and summary directly around this leader's statement, e.g., '{author} Warns...', '{author} Slams...', '{author} Demands...'. Focus on their exact claim."
+                    tagline, summary, is_breaking, hashtags, highlight_phrase, should_skip = generate_ai_content(ai_input)
+                    
+                    if should_skip:
+                        send_msg("⚠️ AI skipped this tweet (marked as vague or irrelevant to current filters).")
+                        continue
+                        
+                    breaking_prefix = "🚨 BREAKING NEWS 🚨\n\n" if is_breaking else ""
+                    caption = f"{breaking_prefix}{summary}\n\n{hashtags}"
+                
+                    if not img_path:
+                        # Fallback to creating our classic red/black poster if no image or it's a video
+                        news_dict = {
+                            'tagline': tagline,
+                            'summary': summary,
+                            'is_breaking': is_breaking,
+                            'hashtags': hashtags,
+                            'highlight_phrase': highlight_phrase
+                        }
+                        img_path, _ = create_poster(news_dict)
+
+                # Post it
+                # img_path could be None here if it was a manual caption and the tweet had no media.
+                send_msg("📤 Uploading to X (Twitter)...")
+                success, error_msg = post_to_twitter(img_path, caption)
+                if success:
+                    send_msg(f"✅ Successfully posted to your X account!\n\nCaption used:\n{caption}")
+                    with open("telegram_posted.flag", "w") as f: f.write("1")
+                else:
+                    send_msg(f"❌ Failed to post to X.\nError: {error_msg}")
+                    with open("error.log", "w", encoding="utf-8") as err_f: err_f.write(f"Link post error: {error_msg}")
         elif text and not text.startswith('/'):
             send_msg("📝 Manual text detected! Generating AI News Brief & Poster...")
             ai_input = f"Manual Breaking News Report: {text}"
