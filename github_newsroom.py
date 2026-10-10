@@ -13,12 +13,12 @@ from generate_news_poster import draw_adaptive_multicolor_text, padded_box, FONT
 HISTORY_FILE = "posted_news.txt"
 
 FEEDS = [
-    # 70% Priority: Focused on Congress, SP, Rahul Gandhi, Akhilesh Yadav
-    'https://news.google.com/rss/search?q=(Rahul+Gandhi+OR+Akhilesh+Yadav+OR+Congress+OR+Samajwadi+Party)+site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:2h&hl=en-IN&gl=IN&ceid=IN:en',
-    # 15% Priority: Local/Normal News
-    'https://news.google.com/rss/search?q=(local+OR+state+OR+public+OR+development+OR+issues)+site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:2h&hl=en-IN&gl=IN&ceid=IN:en',
-    # 15% Priority: General/Others
-    'https://news.google.com/rss/search?q=site:thewire.in+OR+site:newslaundry.com+OR+site:nationalheraldindia.com+when:2h&hl=en-IN&gl=IN&ceid=IN:en'
+    # Top Priority: Delhi Protests, Police action, Emergency
+    'https://news.google.com/rss/search?q=(Delhi+OR+New+Delhi)+(protest+OR+clash+OR+police+OR+emergency+OR+march)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
+    # Secondary: Specific high-alert keywords
+    'https://news.google.com/rss/search?q=(Delhi+police+force+OR+Delhi+border+OR+lathi+charge+OR+detained)+when:1h&hl=en-IN&gl=IN&ceid=IN:en',
+    # Broad Delhi news to catch anything breaking immediately
+    'https://news.google.com/rss/search?q=Delhi+breaking+news+when:1h&hl=en-IN&gl=IN&ceid=IN:en'
 ]
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -34,23 +34,20 @@ def save_to_history(news_id):
         f.write(news_id + "\n")
 
 def generate_ai_content(raw_headline):
-    prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics. I will give you a news headline. 
+    prompt = f"""You are a news editor for 'Civora Times', focusing on Indian politics and breaking emergencies. I will give you a news headline about the current Delhi protest/emergency. 
 You must generate FIVE things:
 1. "tagline": A catchy, punchy, and extremely bold tagline for the poster (MAXIMUM 15 words). Do not use quotes or emojis.
-2. "summary": The caption MUST be short and punchy. First line must be a hook, not an essay. No long emoji paragraphs. Format it strictly as:
-   [Hook/Location]: [1 line of what happened]
-   Fact: [1 line fact]
-   Source: [News Source]
-3. "is_breaking": A boolean (true or false).
-4. "hashtags": Generate EXACTLY 1 or 2 highly searchable, generic hashtags based on the location or core topic (e.g., #Lucknow, #UPPolitics, #Election). DO NOT use brand tags like #CivoraTimes.
+2. "summary": Provide a detailed 4-5 line comprehensive brief about the situation. Capture the tension, force deployment, and exact details. DO NOT use explicit labels like "Hook:", "Fact:", or "Source:". Write it as a flowing, highly engaging news update.
+3. "is_breaking": Set to true as this is an ongoing emergency.
+4. "hashtags": Generate EXACTLY 2 highly searchable, generic hashtags (e.g., #DelhiProtest, #DelhiPolice). DO NOT use brand tags like #CivoraTimes.
 5. "highlight_phrase": Identify the 2-4 most impactful words from the tagline to be highlighted in red. This MUST be an exact substring of the tagline.
 
 Respond ONLY with a valid JSON object in this format:
 {{
     "tagline": "SHORT HEADLINE HERE",
-    "summary": "Lucknow: Gomti gharo mein ghus gayi...\\nFact: ...\\nSource: ...",
-    "is_breaking": false,
-    "hashtags": "#Lucknow #Flood",
+    "summary": "Massive forces have been deployed at the borders as protesters clash with police... (4-5 lines of detailed text)",
+    "is_breaking": true,
+    "hashtags": "#DelhiProtest #Delhi",
     "highlight_phrase": "HEADLINE HERE"
 }}
 
@@ -271,8 +268,10 @@ def main():
             
             if success_tw:
                 save_to_history(news['link'])
-                print("Posted one news item. Exiting to wait for next cron run.")
-                break
+                print("Posted one news item.")
+                time.sleep(20)  # Wait before posting the next one to avoid rate limits
+    
+    print("Emergency news run complete.")
 
 if __name__ == "__main__":
     main()
